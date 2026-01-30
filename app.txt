@@ -1,0 +1,72 @@
+from flask import Flask, render_template, request
+import pandas as pd
+import matplotlib.pyplot as plt
+import os
+
+app = Flask(__name__)
+
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+@app.route("/", methods=["GET", "POST"])
+def upload_file():
+    if request.method == "POST":
+        file = request.files['file']
+        if file.filename == "":
+            return "No file selected!"
+
+        filepath = os.path.join(UPLOAD_FOLDER, file.filename)
+        file.save(filepath)
+
+        # Read CSV
+        df = pd.read_csv(filepath)
+
+        # Add Pass/Fail column
+        df['Result'] = df['Marks'].apply(lambda x: 'Pass' if x >= 40 else 'Fail')
+
+        # Pass vs Fail Graph
+        plt.figure()
+        df['Result'].value_counts().plot(kind='bar', color=['green', 'red'])
+        plt.title("Pass vs Fail")
+        plt.xlabel("Result")
+        plt.ylabel("Count")
+        plt.savefig("static/pass_fail.png")
+
+        # Department-wise Graph
+        plt.figure()
+        df['Department'].value_counts().plot(kind='bar', color='blue')
+        plt.title("Students per Department")
+        plt.xlabel("Department")
+        plt.ylabel("Count")
+        plt.savefig("static/department.png")
+
+        # Subject-wise Average Marks Graph
+        plt.figure()
+        df.groupby('Subject')['Marks'].mean().plot(kind='bar', color='orange')
+        plt.title("Average Marks per Subject")
+        plt.xlabel("Subject")
+        plt.ylabel("Average Marks")
+        plt.savefig("static/subject_avg.png")
+
+        # yield_apples = [0.895, 0.91, 0.919, 0.926, 0.929, 0.931]
+
+        plt.figure() # এটি যোগ করা ভালো যাতে আগের গ্রাফের সাথে মিশে না যায়
+        plt.plot(df['Marks'], marker='o') # marker দিলে পয়েন্টগুলো বোঝা যায়
+        plt.xlabel("Years/Index") # যেহেতু এটা অ্যাপেলের ফলন, তাই নাম পরিবর্তন করা ভালো
+        plt.ylabel("Yield")
+        plt.title("Student Marks")
+        plt.savefig("static/subject1_avg.png")
+
+        return render_template("result.html",
+                               tables=[df.to_html(classes='data')],
+                               graphs=["static/pass_fail.png",
+                                       "static/department.png",
+                                       "static/subject_avg.png",
+                                       "static/subject1_avg.png"])
+
+    return render_template("upload.html")
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+

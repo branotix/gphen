@@ -1,2 +1,2 @@
 # gphen
-hey i am write documentation now ist oka
+now gphen is the ready project for analysis 
